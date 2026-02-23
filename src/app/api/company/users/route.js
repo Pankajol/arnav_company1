@@ -18,6 +18,9 @@ const VALID_ROLES = [
   "Production Head",
   "Project Manager",
   "Employee",
+  "CRM Admin", 
+  "CRM Agent", 
+  "CRM Manager", 
 ];
 
 // ─── Helper ───
@@ -37,15 +40,28 @@ export async function GET(req) {
     await dbConnect();
 
     let query = { companyId: decoded.companyId };
+    const userRoles = decoded.roles || [];
 
-    if (decoded.roles?.includes("Project Manager")) {
-      query.roles = "Employee";
-    } else if (decoded.roles?.includes("Employee")) {
-      query._id = decoded.id;
+    // ─── CRM & System Visibility Logic ───
+    
+    // 1. If CRM Admin or Main Admin, see EVERYTHING (No filter needed beyond companyId)
+    if (userRoles.includes("Admin") || userRoles.includes("CRM Admin")) {
+       // Full access
+    } 
+    // 2. CRM Manager / Sales Manager see the team
+    else if (userRoles.includes("CRM Manager") || userRoles.includes("Sales Manager") || userRoles.includes("Project Manager")) {
+       // Filter to show only specific roles or exclude admins if desired
+       // For now, these see all "Employees" and "Agents"
+       query.roles = { $in: ["Employee", "CRM Agent", "Agent"] };
+    }
+    // 3. CRM Agent / Standard Employee see ONLY THEMSELVES
+    else if (userRoles.includes("CRM Agent") || userRoles.includes("Employee")) {
+       query._id = decoded.id;
     }
 
     const users = await CompanyUser.find(query)
       .select("-password")
+      .populate("employeeId", "fullName email mobileNo") // ✅ Added populate for HR link
       .sort({ createdAt: -1 })
       .lean();
 

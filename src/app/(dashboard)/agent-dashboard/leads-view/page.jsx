@@ -26,7 +26,7 @@ export default function LeadsListPage() {
     if (!lead) return;
     const dataToStore = { ...lead, leadId: lead._id };
     sessionStorage.setItem("opportunityCopyData", JSON.stringify(dataToStore));
-    router.push("/admin/OpportunityDetailsForm");
+    router.push("/agent-dashboard/OpportunityDetailsForm");
   };
 
   const fetchLeads = useCallback(async () => {
@@ -88,7 +88,7 @@ export default function LeadsListPage() {
             </h1>
             <p className="text-slate-500">Track and manage your incoming pipeline</p>
           </div>
-          <Link href="/admin/LeadDetailsFormMaster">
+          <Link href="/agent-dashboard/LeadDetailsFormMaster">
             <button className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95">
               <FaPlus size={14} /> New Lead
             </button>
@@ -239,12 +239,12 @@ function RowMenu({ lead, onDelete, onCopy }) {
     {
       icon: <FaEye />,
       label: "View Profile",
-      onClick: () => router.push(`/admin/leads-view/${lead._id}`),
+      onClick: () => router.push(`/agent-dashboard/leads-view/${lead._id}`),
     },
     {
       icon: <FaEdit />,
       label: "Edit Lead",
-      onClick: () => router.push(`/admin/LeadDetailsFormMaster/${lead._id}`),
+      onClick: () => router.push(`/agent-dashboard/LeadDetailsFormMaster/${lead._id}`),
     },
     {
       icon: <FaCopy />,

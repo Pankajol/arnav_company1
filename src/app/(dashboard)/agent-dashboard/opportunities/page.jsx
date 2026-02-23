@@ -85,7 +85,7 @@ export default function OpportunityListPage() {
             </h1>
             <p className="text-slate-500 font-medium">Manage deals and track sales progress</p>
           </div>
-          <Link href="/admin/OpportunityDetailsForm">
+          <Link href="/agent-dashboard/OpportunityDetailsForm">
             <button className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95">
               <FaPlus size={14} /> New Opportunity
             </button>
@@ -264,12 +264,12 @@ function OpportunityActions({ data, onDelete }) {
     {
       icon: <FaEye />,
       label: "View Details",
-      onClick: () => router.push(`/admin/opportunities/${data._id}`),
+      onClick: () => router.push(`/agent-dashboard/opportunities/${data._id}`),
     },
     {
       icon: <FaEdit />,
       label: "Edit Deal",
-      onClick: () => router.push(`/admin/OpportunityDetailsForm/${data._id}`),
+      onClick: () => router.push(`/agent-dashboard/OpportunityDetailsForm/${data._id}`),
     },
     {
       icon: <FaTrash />,

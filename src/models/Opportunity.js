@@ -18,24 +18,24 @@ const opportunitySchema = new Schema(
 
     accountName: {
       type: String,
-      required: true,
+     
       trim: true,
     },
 
     value: {
       type: Number,
-      required: true,
+  
       min: 0,
     },
 
     stage: {
       type: String,
-      required: true,
+  
     },
 
     closeDate: {
       type: Date,
-      required: true,
+     
     },
 
     probability: {
