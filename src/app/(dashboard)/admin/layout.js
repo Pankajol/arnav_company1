@@ -90,6 +90,7 @@ const Section = ({ title, icon, isOpen, onToggle, children }) => (
           {/* --- ADMIN ONLY SECTION --- */}
           {isAdmin && (
             <Section title="System Controls" icon={<HiMenu/>} isOpen={true}>
+              <Item href="/admin/email-templates" label="Email Templates" icon={<HiDocumentText/>} />
               <Item href="/admin/users" label="User Permissions" icon={<HiUserGroup/>} />
               <Item href="/admin/hr/employees" label="Employee Directory" icon={<HiUsers/>} />
             </Section>
