@@ -372,7 +372,13 @@ export default function CampaignPage() {
                   <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Target Audience</h2>
                 </div>
                 <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
-                  {['segment', 'excel', 'manual'].map(src => (
+                  {/* {['segment', 'excel', 'manual'].map(src => (
+                    <button key={src} type="button" onClick={() => setRecipientSource(src)} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${recipientSource === src ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}>
+                      {src}
+                    </button>
+                  ))} */}
+
+                    {[ 'excel', 'manual'].map(src => (
                     <button key={src} type="button" onClick={() => setRecipientSource(src)} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${recipientSource === src ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}>
                       {src}
                     </button>
@@ -380,7 +386,7 @@ export default function CampaignPage() {
                 </div>
               </div>
 
-              {recipientSource === "segment" && (
+              {/* {recipientSource === "segment" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {segments.map((s) => (
                     <div key={s.id} onClick={() => setSelectedSegment(s.id)} className={`p-6 rounded-3xl border-2 transition-all cursor-pointer relative overflow-hidden ${selectedSegment === s.id ? "border-indigo-600 bg-indigo-50/30" : "border-slate-50 bg-slate-50 hover:border-slate-200"}`}>
@@ -409,7 +415,7 @@ export default function CampaignPage() {
                     </div>
                   ))}
                 </div>
-              )}
+              )} */}
 
               {recipientSource === "excel" && (
                 <div className="space-y-4">
