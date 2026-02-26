@@ -285,7 +285,7 @@ export default function CampaignPage() {
       });
       if (res.ok) {
         setStatusMessage({ type: "success", html: "Campaign Scheduled Successfully!" });
-        router.push("/admin/crm/campaign");
+        router.push("/agent-dashboard/crm/campaign");
       }
     } catch (err) { setStatusMessage({ type: "error", html: "Error: " + err.message }); } finally { setLoading(false); }
   };

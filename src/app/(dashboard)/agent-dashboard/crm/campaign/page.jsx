@@ -68,6 +68,7 @@ export default function UltimateCampaignsDashboard() {
       sent: campaigns.filter(c => c.status === "Sent").length,
       scheduled: campaigns.filter(c => c.status === "Scheduled").length,
     };
+
   }, [campaigns]);
 
   // --- Secure Action Engine ---
@@ -133,6 +134,7 @@ export default function UltimateCampaignsDashboard() {
           <InsightCard title="Total Sent" value={stats.sent} icon={CheckCircle2} color="bg-emerald-500" />
           <InsightCard title="Pending/Scheduled" value={stats.scheduled} icon={Clock} color="bg-amber-500" />
         </div>
+
 
         {/* Toolbar */}
         <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-3 rounded-3xl border border-slate-200 shadow-sm">

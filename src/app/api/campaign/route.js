@@ -123,7 +123,7 @@ export async function POST(req) {
     // build campaign object
     const campaignData = {
       campaignName: campaignName.trim(),
-      scheduledTime: scheduledUtc,
+      scheduledTime,
       channel,
       sender: sender.trim(),
       content,
