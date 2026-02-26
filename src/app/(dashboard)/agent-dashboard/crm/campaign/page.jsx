@@ -7,7 +7,8 @@ import { toast } from "react-toastify";
 import { 
   Eye, Pencil, Send, BarChart3, Trash2, 
   Search, Plus, Loader2, Mail, MessageSquare,
-  TrendingUp, CheckCircle2, Clock, ShieldCheck
+  TrendingUp, CheckCircle2, Clock, ShieldCheck,
+  Inbox, AlertCircle
 } from "lucide-react";
 
 // --- Advanced Metric Component ---
@@ -42,12 +43,17 @@ export default function UltimateCampaignsDashboard() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const { data } = await axios.get("/api/campaign", {
+      const res = await axios.get("/api/campaign", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (data.success) setCampaigns(data.data);
+
+      // Flexible data check: handles res.data.data OR res.data
+      const fetchedData = res.data.success ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+      setCampaigns(fetchedData);
+      
     } catch (err) {
-      toast.error("Network synchronization failed");
+      console.error("Fetch Error:", err);
+      toast.error("Failed to sync with server");
     } finally {
       setLoading(false);
     }
@@ -55,10 +61,18 @@ export default function UltimateCampaignsDashboard() {
 
   useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 
-  // --- The "Advanced X" Action Engine ---
-  // Prevents multiple clicks and handles state transition
+  // --- Dynamic Analytics Calculation ---
+  const stats = useMemo(() => {
+    return {
+      total: campaigns.length,
+      sent: campaigns.filter(c => c.status === "Sent").length,
+      scheduled: campaigns.filter(c => c.status === "Scheduled").length,
+    };
+  }, [campaigns]);
+
+  // --- Secure Action Engine ---
   const executeSecureAction = async (id, type, apiCall) => {
-    if (processingIds[id]) return; // Block if already in progress
+    if (processingIds[id]) return; 
 
     setProcessingIds(prev => ({ ...prev, [id]: type }));
     try {
@@ -68,7 +82,7 @@ export default function UltimateCampaignsDashboard() {
         if (type === 'delete') {
           setCampaigns(prev => prev.filter(c => c._id !== id));
         } else {
-          fetchCampaigns(); // Refresh for 'send' or other updates
+          fetchCampaigns(); 
         }
       } else {
         toast.error(res.data.error || "Operation failed");
@@ -86,7 +100,7 @@ export default function UltimateCampaignsDashboard() {
 
   const filtered = useMemo(() => {
     return campaigns.filter(c => {
-      const matchesSearch = c.campaignName?.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = (c.campaignName || "").toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -100,13 +114,13 @@ export default function UltimateCampaignsDashboard() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-indigo-600 font-bold tracking-tighter uppercase text-sm">
-              <ShieldCheck size={16} /> Secure Admin Portal
+              <ShieldCheck size={16} /> Campaign Command Center
             </div>
-            <h1 className="text-5xl font-black tracking-tight text-slate-900">Campaigns<span className="text-indigo-600">.</span></h1>
+            <h1 className="text-5xl font-black tracking-tight text-slate-900">Dashboard<span className="text-indigo-600">.</span></h1>
           </div>
           <button
             onClick={() => router.push("/agent-dashboard/crm/campaign/new")}
-            className="group relative h-14 px-8 bg-slate-900 text-white rounded-2xl font-bold transition-all hover:bg-indigo-600 active:scale-95 flex items-center gap-3 overflow-hidden"
+            className="group relative h-14 px-8 bg-slate-900 text-white rounded-2xl font-bold transition-all hover:bg-indigo-600 active:scale-95 flex items-center gap-3 overflow-hidden shadow-xl shadow-slate-200"
           >
             <Plus size={20} strokeWidth={3} />
             <span>New Campaign</span>
@@ -115,9 +129,9 @@ export default function UltimateCampaignsDashboard() {
 
         {/* Dynamic Analytics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <InsightCard title="Active Campaigns" value={campaigns.length} icon={TrendingUp} color="bg-indigo-600" />
-          {/* <InsightCard title="Success Rate" value="98.2%" icon={CheckCircle2} color="bg-emerald-500" />
-          <InsightCard title="Next Batch" value="14:00" icon={Clock} color="bg-amber-500" /> */}
+          <InsightCard title="Total Campaigns" value={stats.total} icon={Inbox} color="bg-slate-800" />
+          <InsightCard title="Total Sent" value={stats.sent} icon={CheckCircle2} color="bg-emerald-500" />
+          <InsightCard title="Pending/Scheduled" value={stats.scheduled} icon={Clock} color="bg-amber-500" />
         </div>
 
         {/* Toolbar */}
@@ -145,12 +159,12 @@ export default function UltimateCampaignsDashboard() {
         </div>
 
         {/* Advanced Data Table */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-slate-200/40 overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-slate-200/40 overflow-hidden min-h-[400px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Campaign Hub</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Timeline</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Campaign Details</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Schedule</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Status</th>
                 <th className="px-8 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Control Center</th>
               </tr>
@@ -158,6 +172,15 @@ export default function UltimateCampaignsDashboard() {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr><td colSpan="4" className="py-32 text-center"><Loader2 className="animate-spin inline text-indigo-600" size={48} /></td></tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="py-32 text-center">
+                    <div className="flex flex-col items-center gap-3 text-slate-300">
+                      <AlertCircle size={48} />
+                      <p className="text-lg font-bold">No data found in your records</p>
+                    </div>
+                  </td>
+                </tr>
               ) : filtered.map((c) => (
                 <tr key={c._id} className="hover:bg-slate-50/50 transition-all group">
                   <td className="px-8 py-6">
@@ -173,10 +196,10 @@ export default function UltimateCampaignsDashboard() {
                   </td>
                   <td className="px-8 py-6">
                     <div className="text-sm font-bold text-slate-600">
-                      {new Date(c.scheduledTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      {c.scheduledTime ? new Date(c.scheduledTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
                     </div>
                     <div className="text-[10px] text-slate-400 font-black uppercase mt-1">
-                      {new Date(c.scheduledTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                      {c.scheduledTime ? new Date(c.scheduledTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "-"}
                     </div>
                   </td>
                   <td className="px-8 py-6">
@@ -190,25 +213,34 @@ export default function UltimateCampaignsDashboard() {
                   <td className="px-8 py-6" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-end items-center gap-3">
                       
-                      {/* 1. VIEW/EDIT (Pencil) */}
+                      {/* VIEW Action */}
                       <button 
-                        onClick={() => router.push(`/admin/crm/campaign/${c._id}/edit`)} 
+                        onClick={() => router.push(`/agent-dashboard/crm/campaign/${c._id}`)} 
+                        className="p-3 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all"
+                        title="Quick View"
+                      >
+                        <Eye size={20} />
+                      </button>
+
+                      {/* EDIT Action */}
+                      <button 
+                        onClick={() => router.push(`/agent-dashboard/crm/campaign/${c._id}/edit`)} 
                         className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all"
                         title="Edit Settings"
                       >
                         <Pencil size={20} />
                       </button>
 
-                      {/* 2. REPORT BUTTON (BarChart) - Always available for Sent campaigns */}
+                      {/* REPORT Action */}
                       <button 
-                        onClick={() => router.push(`/admin/crm/campaign/${c._id}/report`)} 
+                        onClick={() => router.push(`/agent-dashboard/crm/campaign/${c._id}/report`)} 
                         className="p-3 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-2xl transition-all"
                         title="Analytics Report"
                       >
                         <BarChart3 size={20} />
                       </button>
                       
-                      {/* 3. SEND NOW BUTTON (Send) - Only for non-sent, with locking */}
+                      {/* SEND NOW Action */}
                       {c.status !== "Sent" && (
                         <button 
                           disabled={!!processingIds[c._id]}
@@ -220,7 +252,7 @@ export default function UltimateCampaignsDashboard() {
                         </button>
                       )}
 
-                      {/* 4. DELETE BUTTON (Trash) */}
+                      {/* DELETE Action */}
                       <button 
                         disabled={!!processingIds[c._id]}
                         onClick={() => { if(confirm("Archive this campaign permanently?")) executeSecureAction(c._id, 'delete', () => axios.delete(`/api/campaign/${c._id}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }})) }}
@@ -240,7 +272,6 @@ export default function UltimateCampaignsDashboard() {
     </div>
   );
 }
-
 
 // "use client";
 
