@@ -24,6 +24,8 @@ export default function CampaignPage() {
   const [sender, setSender] = useState("Marketing Team");
   const [emailSubject, setEmailSubject] = useState("");
   const [ctaText, setCtaText] = useState("");
+
+
   const [emailContent, setEmailContent] = useState("<p></p>");
   const [whatsappContent, setWhatsappContent] = useState("");
   const [wordCount, setWordCount] = useState(0);

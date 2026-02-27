@@ -360,7 +360,7 @@ const payload = {
         type: "success",
         html: "Campaign Scheduled Successfully!",
       });
-      router.push("/agent-dashboard/crm/campaign");
+      router.push("/admin/crm/campaign");
     } else {
       const errData = await res.json();
       setStatusMessage({
