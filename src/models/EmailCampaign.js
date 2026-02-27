@@ -53,9 +53,16 @@ const CampaignSchema = new mongoose.Schema(
       required: true,
     },
 
-    recipientList: { type: String },
-    recipientManual: { type: String },
-    recipientExcelEmails: {
+   
+
+recipientList: {
+  type: [String],
+  default: [],
+},
+
+recipientManual: { type: String },
+
+recipientExcelEmails: {
   type: [String],
   default: [],
 },

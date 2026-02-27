@@ -119,11 +119,13 @@ export default function CampaignPage() {
         const res = await fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } });
         const json = await res.json();
         const arr = Array.isArray(json) ? json : json.data || [];
-        setCustomersList(arr.map((c) => ({
-          _id: c._id || c.id || c.emailId || Math.random().toString(36).slice(2, 9),
-          name: c.customerName || c.name || c.fullName || c.companyName || "—",
-          email: c.emailId || c.email || c.emailAddress || "",
-        })));
+        setCustomersList(
+  arr.map((c) => ({
+    _id: c.name,
+    name: c.customer_name || c.name || "—",
+    email: c.email_id || "",
+  }))
+);
       } catch (err) { console.error(err); } finally { setLoadingCustomers(false); }
     };
 
@@ -137,11 +139,13 @@ export default function CampaignPage() {
         const res = await fetch("/api/lead", { headers: { Authorization: `Bearer ${token}` } });
         const json = await res.json();
         const arr = Array.isArray(json) ? json : json.data || [];
-        setLeadsList(arr.map((l) => ({
-          _id: l._id || l.id || Math.random().toString(36).slice(2, 9),
-          name: l.leadName || l.name || l.fullName || l.companyName || "—",
-          email: l.email || l.emailId || l.emailAddress || "",
-        })));
+       setLeadsList(
+  arr.map((l) => ({
+    _id: l.name, // ERPNext document name is unique
+    name: l.lead_name || l.name || "—",
+    email: l.email_id || "", // ✅ CORRECT FIELD
+  }))
+);
       } catch (err) { console.error(err); } finally { setLoadingLeads(false); }
     };
 
@@ -188,7 +192,7 @@ export default function CampaignPage() {
   };
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || "").toString().trim());
-  const normalizeEmail = (email) => email?.toString().trim().replace(/,+$/, "").toLowerCase();
+  // const isValidEmail = (email) => email?.toString().trim().replace(/,+$/, "").toLowerCase();
 
   const handleExcelChange = (e) => {
     const file = e.target.files?.[0];
@@ -204,7 +208,7 @@ export default function CampaignPage() {
         const firstRowKeys = Object.keys(rows[0] || {});
         let emailKey = firstRowKeys[0];
         const preview = rows.map((r, idx) => {
-          const rawEmail = normalizeEmail(r[emailKey] ?? r.email ?? "");
+          const rawEmail = isValidEmail(r[emailKey] ?? r.email ?? "");
           return { id: idx + 1, email: rawEmail || "", raw: r, valid: isValidEmail(rawEmail), isSent: false };
         });
         setExcelPreviewRows(preview);
@@ -240,55 +244,140 @@ export default function CampaignPage() {
   };
 
   const parsedManualEmails = useCallback(() => {
-    if (!manualInput) return [];
-    return [...new Set(manualInput.split(/[\n,]+/).map((m) => normalizeEmail(m)).filter(Boolean))];
-  }, [manualInput]);
+  if (!manualInput) return [];
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); setStatusMessage(null);
+  return [
+    ...new Set(
+      manualInput
+        .split(/[\n,]+/)
+        .map((m) => m.trim().toLowerCase())
+        .filter((m) => isValidEmail(m))
+    )
+  ];
+}, [manualInput]);
 
-    const attachmentBase64 = await Promise.all(attachments.map(file => new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-    })));
+ const handleFormSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setStatusMessage(null);
 
-    let recipientListPayload;
-    if (recipientSource === "excel") recipientListPayload = excelPreviewRows.filter(r => r.valid).map(r => r.email);
-    else if (recipientSource === "manual") recipientListPayload = parsedManualEmails().filter(e => isValidEmail(e));
-    else {
-      if (selectedSegment === "source_customers") recipientListPayload = selectedCustomerIds.size ? customersList.filter(c => selectedCustomerIds.has(c._id)).map(c => c.email) : "ALL_CUSTOMERS";
-      else if (selectedSegment === "source_leads") recipientListPayload = selectedLeadIds.size ? leadsList.filter(c => selectedLeadIds.has(c._id)).map(c => c.email) : "ALL_LEADS";
-      else recipientListPayload = selectedSegment;
+  try {
+    // ================= ATTACHMENTS =================
+    const attachmentBase64 = await Promise.all(
+      attachments.map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          })
+      )
+    );
+
+    // ================= BUILD RECIPIENTS =================
+
+let recipientListPayload = [];
+
+if (recipientSource === "segment") {
+  if (selectedSegment === "source_customers") {
+    recipientListPayload =
+      selectedCustomerIds.size > 0
+        ? customersList
+            .filter(c => selectedCustomerIds.has(c._id))
+            .map(c => c.email)
+        : customersList.map(c => c.email);
+  }
+
+  if (selectedSegment === "source_leads") {
+    recipientListPayload =
+      selectedLeadIds.size > 0
+        ? leadsList
+            .filter(l => selectedLeadIds.has(l._id))
+            .map(l => l.email)
+        : leadsList.map(l => l.email);
+  }
+}
+
+if (recipientSource === "excel") {
+  recipientListPayload = excelPreviewRows
+    .filter(r => r.valid)
+    .map(r => r.email);
+}
+
+if (recipientSource === "manual") {
+  recipientListPayload = parsedManualEmails();
+}
+
+// remove duplicates + invalid
+recipientListPayload = [
+  ...new Set(
+    recipientListPayload
+      .map(e => e?.toString().trim().toLowerCase())
+      .filter(e => isValidEmail(e))
+  )
+];
+
+if (recipientListPayload.length === 0) {
+  setStatusMessage({
+    type: "error",
+    html: "Please select at least one valid recipient."
+  });
+  setLoading(false);
+  return;
+}
+
+const payload = {
+  campaignName,
+  scheduledTime,
+  channel,
+  sender: channel === "email" ? sender : "WhatsApp API",
+  content: channel === "email" ? emailContent : whatsappContent,
+  emailSubject,
+  ctaText,
+
+  recipientSource,
+  recipientList: recipientSource === "segment" ? recipientListPayload : [],
+  recipientExcelEmails: recipientSource === "excel" ? recipientListPayload : [],
+  recipientManual: recipientSource === "manual" ? manualInput : null,
+
+  attachments: attachmentBase64,
+};
+
+    console.log("FINAL PAYLOAD:", payload);
+
+    // ================= API CALL =================
+    const res = await fetch("/api/campaign", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      setStatusMessage({
+        type: "success",
+        html: "Campaign Scheduled Successfully!",
+      });
+      router.push("/agent-dashboard/crm/campaign");
+    } else {
+      const errData = await res.json();
+      setStatusMessage({
+        type: "error",
+        html: errData?.error || "Something went wrong.",
+      });
     }
 
-    const payload = {
-      campaignName: e.target.campaignName.value,
-      scheduledTime: e.target.scheduledTime.value,
-      channel,
-      sender: channel === "email" ? e.target.sender.value : "WhatsApp API",
-      content: channel === "email" ? emailContent : whatsappContent,
-      emailSubject: emailSubject,
-      ctaText: ctaText,
-      recipientSource,
-      recipientList: recipientSource === "segment" ? recipientListPayload : undefined,
-      recipientManual: recipientSource === "manual" ? manualInput : undefined,
-      recipientExcelEmails: recipientSource === "excel" ? recipientListPayload : undefined,
-      attachments: attachmentBase64,
-    };
-
-    try {
-      const res = await fetch("/api/campaign", {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        setStatusMessage({ type: "success", html: "Campaign Scheduled Successfully!" });
-        router.push("/agent-dashboard/crm/campaign");
-      }
-    } catch (err) { setStatusMessage({ type: "error", html: "Error: " + err.message }); } finally { setLoading(false); }
-  };
+  } catch (err) {
+    setStatusMessage({
+      type: "error",
+      html: "Error: " + err.message,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   function formatStringToAMPM(dateString) {
     if (!dateString) return "";
@@ -339,7 +428,8 @@ export default function CampaignPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">Campaign Name</label>
-                  <input type="text" name="campaignName" required className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-700" placeholder="Diwali Promo 2026" />
+                  <input type="text" name="campaignName" required   value={campaignName}
+  onChange={(e) => setCampaignName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-700" placeholder="Diwali Promo 2026" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">Execution Time</label>
@@ -372,21 +462,16 @@ export default function CampaignPage() {
                   <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Target Audience</h2>
                 </div>
                 <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
-                  {/* {['segment', 'excel', 'manual'].map(src => (
-                    <button key={src} type="button" onClick={() => setRecipientSource(src)} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${recipientSource === src ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}>
-                      {src}
-                    </button>
-                  ))} */}
-
-                    {[ 'excel', 'manual'].map(src => (
+                  {['segment', 'excel', 'manual'].map(src => (
                     <button key={src} type="button" onClick={() => setRecipientSource(src)} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${recipientSource === src ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}>
                       {src}
                     </button>
                   ))}
+
                 </div>
               </div>
 
-              {/* {recipientSource === "segment" && (
+              {recipientSource === "segment" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {segments.map((s) => (
                     <div key={s.id} onClick={() => setSelectedSegment(s.id)} className={`p-6 rounded-3xl border-2 transition-all cursor-pointer relative overflow-hidden ${selectedSegment === s.id ? "border-indigo-600 bg-indigo-50/30" : "border-slate-50 bg-slate-50 hover:border-slate-200"}`}>
@@ -415,7 +500,7 @@ export default function CampaignPage() {
                     </div>
                   ))}
                 </div>
-              )} */}
+              )}
 
               {recipientSource === "excel" && (
                 <div className="space-y-4">
@@ -813,7 +898,7 @@ export default function CampaignPage() {
 //   };
 
 //   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || "").toString().trim());
-//   const normalizeEmail = (email) => email?.toString().trim().replace(/,+$/, "").toLowerCase();
+//   const isValidEmail = (email) => email?.toString().trim().replace(/,+$/, "").toLowerCase();
 
 //   const handleExcelChange = (e) => {
 //     const file = e.target.files?.[0];
@@ -876,7 +961,7 @@ export default function CampaignPage() {
 //         const preview = rows.map((r, idx) => {
 //           const raw = r;
 //           const candidateValue = r[emailKey] ?? r.email ?? r.Email ?? "";
-//           const rawEmail = normalizeEmail(candidateValue);
+//           const rawEmail = isValidEmail(candidateValue);
 //           const valid = isValidEmail(rawEmail);
 //           const sentRaw = sentKey ? String(r[sentKey] ?? "").toLowerCase() : "";
 //           const isSent = sentKey ? (["1", "true", "yes", "sent", "delivered"].includes(sentRaw) ? true : false) : false;
@@ -951,7 +1036,7 @@ export default function CampaignPage() {
 //   // parse manual
 //   const parsedManualEmails = useCallback(() => {
 //     if (!manualInput) return [];
-//     return [...new Set(manualInput.split(/[\n,]+/).map((m) => normalizeEmail(m)).filter(Boolean))];
+//     return [...new Set(manualInput.split(/[\n,]+/).map((m) => isValidEmail(m)).filter(Boolean))];
 //   }, [manualInput]);
 
 //   // ---------------------

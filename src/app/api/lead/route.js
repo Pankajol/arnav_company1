@@ -35,30 +35,50 @@ export async function POST(req) {
 
 
 // GET /api/lead
-export async function GET(req) {
+// export async function GET(req) {
+//   try {
+//     const token = getTokenFromHeader(req);
+//     if (!token) {
+//       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+//     }
+
+//     // Verify token
+//     const user = await verifyJWT(token);
+//     if (!user) {
+//       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+//     }
+
+//     await dbConnect();
+
+//     // Only fetch leads owned by logged-in user
+//     const leads = await Lead.find({ leadOwner: user.id });
+
+//     return NextResponse.json(leads, { status: 200 });
+//   } catch (error) {
+//     console.error("Error in GET /api/lead:", error);
+//     return NextResponse.json(
+//       { message: "Failed to fetch leads." },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+export async function GET() {
   try {
-    const token = getTokenFromHeader(req);
-    if (!token) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify token
-    const user = await verifyJWT(token);
-    if (!user) {
-      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-    }
-
-    await dbConnect();
-
-    // Only fetch leads owned by logged-in user
-    const leads = await Lead.find({ leadOwner: user.id });
-
-    return NextResponse.json(leads, { status: 200 });
-  } catch (error) {
-    console.error("Error in GET /api/lead:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch leads." },
-      { status: 500 }
+    const response = await fetch(
+      "https://aits-arnav.m.frappe.cloud/api/resource/Lead?fields=[\"name\",\"lead_name\",\"email_id\"]",
+      {
+        headers: {
+          Authorization: `token ${process.env.ERP_API_KEY}:${process.env.ERP_API_SECRET}`,
+        },
+      }
     );
+
+    const data = await response.json();
+
+    return Response.json(data);
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }

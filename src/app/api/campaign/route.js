@@ -90,7 +90,12 @@ export async function POST(req) {
     if (!recipientSource || !["segment", "excel", "manual"].includes(recipientSource)) {
       return badRequest("Invalid recipientSource type");
     }
-    if (recipientSource === "segment" && !recipientList) return badRequest("Recipient segment is required");
+    if (
+  recipientSource === "segment" &&
+  (!Array.isArray(recipientList) || recipientList.filter(Boolean).length === 0)
+) {
+  return badRequest("Recipient segment is required");
+}
     if (recipientSource === "manual" && (!recipientManual || !String(recipientManual).trim())) return badRequest("Manual recipients required");
 
     // Excel validation & sanitize
@@ -130,7 +135,10 @@ export async function POST(req) {
       emailSubject: channel === "email" ? (emailSubject || "").trim() : undefined,
       ctaText: channel === "email" ? (ctaText || "").trim() : undefined,
       recipientSource,
-      recipientList: recipientList || null,
+      recipientList:
+  recipientSource === "segment" && Array.isArray(recipientList)
+    ? recipientList.filter(Boolean)
+    : [],
       recipientManual: recipientSource === "manual" ? (recipientManual || "") : null,
       recipientExcelEmails: recipientSource === "excel" ? cleanedExcelEmails : [],
       attachments: attachmentsSafe,

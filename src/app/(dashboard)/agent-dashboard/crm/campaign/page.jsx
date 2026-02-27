@@ -246,7 +246,26 @@ export default function UltimateCampaignsDashboard() {
                       {c.status !== "Sent" && (
                         <button 
                           disabled={!!processingIds[c._id]}
-                          onClick={() => executeSecureAction(c._id, 'send', () => axios.post(`/api/campaign/${c._id}/send-now`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }}))}
+                      onClick={() => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Session expired. Please login again.");
+    return;
+  }
+
+  executeSecureAction(c._id, "send", () =>
+    axios.post(
+      `/api/campaign/${c._id}/send-now`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+  );
+}}
                           className={`p-3 rounded-2xl transition-all ${processingIds[c._id] === 'send' ? 'bg-slate-100 text-slate-300' : 'text-emerald-500 hover:bg-emerald-50'}`}
                           title="Execute Campaign"
                         >

@@ -37,39 +37,59 @@ async function validateUser(req) {
   }
 }
 
-export async function GET(req) {
-  await dbConnect();
+// export async function GET(req) {
+//   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
-  if (error)
-    return NextResponse.json({ success: false, message: error }, { status });
+//   const { user, error, status } = await validateUser(req);
+//   if (error)
+//     return NextResponse.json({ success: false, message: error }, { status });
 
-  // Authorization: ensure user has access to customers
-  if (!isAuthorized(user)) {
-    return NextResponse.json(
-      { success: false, message: "Forbidden: insufficient permissions" },
-      { status: 403 }
-    );
-  }
+//   // Authorization: ensure user has access to customers
+//   if (!isAuthorized(user)) {
+//     return NextResponse.json(
+//       { success: false, message: "Forbidden: insufficient permissions" },
+//       { status: 403 }
+//     );
+//   }
 
+//   try {
+//     // Restrict populated fields to avoid extra data
+//     const customers = await Customer.find({
+//       companyId: user.companyId,
+//     })
+//     .populate("assignedAgents", "name email")
+//     .populate("glAccount", "accountName accountCode");
+
+//     return NextResponse.json({ success: true, data: customers }, { status: 200 });
+//   } catch (err) {
+//     console.error("GET /customers error:", err);
+//     return NextResponse.json(
+//       { success: false, message: "Failed to fetch customers" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+export async function GET() {
   try {
-    // Restrict populated fields to avoid extra data
-    const customers = await Customer.find({
-      companyId: user.companyId,
-    })
-    .populate("assignedAgents", "name email")
-    .populate("glAccount", "accountName accountCode");
-
-    return NextResponse.json({ success: true, data: customers }, { status: 200 });
-  } catch (err) {
-    console.error("GET /customers error:", err);
-    return NextResponse.json(
-      { success: false, message: "Failed to fetch customers" },
-      { status: 500 }
+    const response = await fetch(
+      `${process.env.ERP_URL}/api/resource/Customer?fields=["name","customer_name","email_id"]`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `token ${process.env.ERP_API_KEY}:${process.env.ERP_API_SECRET}`,
+          "Content-Type": "application/json",
+        },
+      }
     );
+
+    const data = await response.json();
+    return Response.json(data);
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
-
 
 /* ========================================
    ✏️ POST /api/customers
