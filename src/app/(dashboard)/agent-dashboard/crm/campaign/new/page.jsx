@@ -24,12 +24,12 @@ export default function CampaignPage() {
   const [sender, setSender] = useState("Marketing Team");
   const [emailSubject, setEmailSubject] = useState("");
   const [ctaText, setCtaText] = useState("");
-
-
   const [emailContent, setEmailContent] = useState("<p></p>");
   const [whatsappContent, setWhatsappContent] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [attachments, setAttachments] = useState([]);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [recipientSource, setRecipientSource] = useState("segment"); 
   const [segments, setSegments] = useState([]); 
   const [selectedSegment, setSelectedSegment] = useState(""); 
@@ -183,9 +183,43 @@ export default function CampaignPage() {
     setWordCount(textOnly ? textOnly.split(/\s+/).length : 0);
   };
 
+  // const handleAttachmentChange = (e) => {
+  //   if (e.target.files) setAttachments((p) => [...p, ...Array.from(e.target.files)]);
+  // };
   const handleAttachmentChange = (e) => {
-    if (e.target.files) setAttachments((p) => [...p, ...Array.from(e.target.files)]);
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+
+    // 100MB limit example
+    const validFiles = files.filter(
+      (file) => file.size <= 100 * 1024 * 1024
+    );
+
+    setAttachments((prev) => [...prev, ...validFiles]);
   };
+
+  // Generate Preview URL safely
+  useEffect(() => {
+    if (!previewFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(previewFile);
+    setPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url); // memory cleanup
+  }, [previewFile]);
+
+  // ESC key close
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setPreviewFile(null);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
   const removeAttachment = (i) => setAttachments((p) => p.filter((_, idx) => idx !== i));
 
   const clearExcel = () => {
@@ -362,7 +396,7 @@ const payload = {
         type: "success",
         html: "Campaign Scheduled Successfully!",
       });
-      router.push("/agent-dashboard/crm/campaign");
+      router.push("/admin/crm/campaign");
     } else {
       const errData = await res.json();
       setStatusMessage({
@@ -570,7 +604,137 @@ const payload = {
                 </div>
               )}
             </div>
+ <div className="mt-4">
+      {/* FILE INPUT */}
+      <div className="relative inline-block">
+        <input
+          type="file"
+          id="file-upload"
+          multiple
+          accept="image/*,video/*,.pdf,.doc,.docx"
+          className="hidden"
+          onChange={handleAttachmentChange}
+        />
+        <label
+          htmlFor="file-upload"
+          className="cursor-pointer flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition"
+        >
+          📎 Attach Files
+        </label>
+      </div>
 
+      {/* THUMBNAILS */}
+      {attachments.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-3">
+          {attachments.map((file, i) => {
+            const thumbUrl = URL.createObjectURL(file);
+
+            return (
+              <div key={i} className="relative cursor-pointer">
+                {/* Image */}
+                {file.type.startsWith("image/") && (
+                  <img
+                    src={thumbUrl}
+                    alt=""
+                    className="w-24 h-24 object-cover rounded-lg border"
+                    onClick={() => setPreviewFile(file)}
+                  />
+                )}
+
+                {/* Video */}
+                {file.type.startsWith("video/") && (
+                  <video
+                    src={thumbUrl}
+                    className="w-24 h-24 object-cover rounded-lg border"
+                    onClick={() => setPreviewFile(file)}
+                  />
+                )}
+
+                {/* Other Files */}
+                {!file.type.startsWith("image/") &&
+                  !file.type.startsWith("video/") && (
+                    <div
+                      onClick={() => setPreviewFile(file)}
+                      className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-lg text-xs text-center p-2"
+                    >
+                      {file.name}
+                    </div>
+                  )}
+
+                {/* Remove Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAttachments((prev) =>
+                      prev.filter((_, index) => index !== i)
+                    );
+                  }}
+                  className="absolute top-1 right-1 bg-black text-white text-xs px-1 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* FULL PREVIEW MODAL */}
+      {previewFile && previewUrl && (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    
+    {/* Backdrop */}
+    <div
+      className="absolute inset-0 bg-black/80"
+      onClick={() => setPreviewFile(null)}
+    />
+
+    {/* Modal Content */}
+    <div className="relative z-10 max-w-4xl w-full p-4">
+      
+      {/* Close Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPreviewFile(null);
+          }}
+          className="absolute top-3 right-3 bg-white px-3 py-1 rounded shadow z-[10000]"
+        >
+          ✕
+        </button>
+
+      {/* IMAGE */}
+      {previewFile.type.startsWith("image/") && (
+        <img
+          src={previewUrl}
+          alt=""
+          className="max-h-[80vh] mx-auto rounded"
+        />
+      )}
+
+      {/* VIDEO */}
+      {previewFile.type.startsWith("video/") && (
+        <video
+          src={previewUrl}
+          controls
+          autoPlay
+          className="max-h-[80vh] mx-auto rounded"
+        />
+      )}
+
+      {/* PDF */}
+      {previewFile.type === "application/pdf" && (
+        <iframe
+          src={previewUrl}
+          className="w-full h-[80vh] bg-white rounded"
+        />
+      )}
+    </div>
+  </div>
+)}
+    </div>
             <button type="submit" disabled={loading} className={`w-full py-6 rounded-[2rem] text-white font-black text-xl tracking-tight shadow-xl shadow-indigo-200 transform transition active:scale-95 flex items-center justify-center gap-3 ${loading ? "bg-slate-400" : channel === "email" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-emerald-600 hover:bg-emerald-700"}`}>
               {loading ? <Loader2 className="animate-spin" /> : <><Calendar size={24} /> Schedule {channel.toUpperCase()} Campaign</>}
             </button>
@@ -623,6 +787,7 @@ const payload = {
     </div>
   );
 }
+
 
 
 // "use client";
