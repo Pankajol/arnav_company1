@@ -297,7 +297,7 @@ const uploadToCloudinary = async (file) => {
   const formData = new FormData();
 
   formData.append("file", file);
-  formData.append("upload_preset", "YOUR_UPLOAD_PRESET"); 
+  formData.append("upload_preset", "application"); 
   // 👆 Cloudinary dashboard se lo
   // Settings → Upload → Upload Preset (Unsigned)
 
