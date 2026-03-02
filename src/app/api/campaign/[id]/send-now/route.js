@@ -289,9 +289,13 @@ if (!recipients || recipients.length === 0) {
         status: "Active",
       }).lean();
     }
-
+  
     const transporter = await buildTransporterForEmailMaster(emailMaster);
-
+    const emailAttachments =
+  campaign.attachments?.map((url) => ({
+    filename: url.split("/").pop().split("?")[0],
+    path: url, // Nodemailer auto download karega
+  })) || [];
     if (!transporter) {
       return new Response(
         JSON.stringify({
@@ -313,6 +317,7 @@ if (!recipients || recipients.length === 0) {
           to,
           subject: campaign.emailSubject || "(no subject)",
           html: campaign.content,
+          attachments: emailAttachments,
         });
 
         await EmailLog.create({
