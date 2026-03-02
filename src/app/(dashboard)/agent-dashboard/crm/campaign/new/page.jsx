@@ -292,23 +292,71 @@ export default function CampaignPage() {
   ];
 }, [manualInput]);
 
+
+const uploadToCloudinary = async (file) => {
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("upload_preset", "application"); 
+  // 👆 Cloudinary dashboard se lo
+  // Settings → Upload → Upload Preset (Unsigned)
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/dz1gfppll/auto/upload`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    console.error("Invalid Cloudinary response:", text);
+    throw new Error("Upload failed (invalid response)");
+  }
+
+  if (!res.ok) {
+    throw new Error(data.error?.message || "Upload failed");
+  }
+
+  return data.secure_url;
+};
+
  const handleFormSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
   setStatusMessage(null);
 
   try {
+    // // ================= ATTACHMENTS =================
+    // const attachmentBase64 = await Promise.all(
+    //   attachments.map(
+    //     (file) =>
+    //       new Promise((resolve) => {
+    //         const reader = new FileReader();
+    //         reader.onload = () => resolve(reader.result);
+    //         reader.readAsDataURL(file);
+    //       })
+    //   )
+    // );
+
     // ================= ATTACHMENTS =================
-    const attachmentBase64 = await Promise.all(
-      attachments.map(
-        (file) =>
-          new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(file);
-          })
-      )
-    );
+let attachmentUrls = [];
+
+if (attachments.length > 0) {
+  setStatusMessage({
+    type: "info",
+    html: "Uploading attachments..."
+  });
+
+  attachmentUrls = await Promise.all(
+    attachments.map(file => uploadToCloudinary(file))
+  );
+}
 
     // ================= BUILD RECIPIENTS =================
 
@@ -376,7 +424,7 @@ const payload = {
   recipientExcelEmails: recipientSource === "excel" ? recipientListPayload : [],
   recipientManual: recipientSource === "manual" ? manualInput : null,
 
-  attachments: attachmentBase64,
+  attachments: attachmentUrls,
 };
 
     console.log("FINAL PAYLOAD:", payload);
