@@ -295,20 +295,35 @@ export default function CampaignPage() {
 
 const uploadToCloudinary = async (file) => {
   const formData = new FormData();
+
   formData.append("file", file);
+  formData.append("upload_preset", "YOUR_UPLOAD_PRESET"); 
+  // 👆 Cloudinary dashboard se lo
+  // Settings → Upload → Upload Preset (Unsigned)
 
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/dz1gfppll/auto/upload`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
 
-  const data = await res.json();
+  const text = await res.text();
 
-  if (!res.ok) {
-    throw new Error(data.error || "Upload failed");
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    console.error("Invalid Cloudinary response:", text);
+    throw new Error("Upload failed (invalid response)");
   }
 
-  return data.url;
+  if (!res.ok) {
+    throw new Error(data.error?.message || "Upload failed");
+  }
+
+  return data.secure_url;
 };
 
  const handleFormSubmit = async (e) => {
