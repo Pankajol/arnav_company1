@@ -222,11 +222,23 @@ export default function CampaignPage() {
   }, []);
   const removeAttachment = (i) => setAttachments((p) => p.filter((_, idx) => idx !== i));
 
-  const clearExcel = () => {
-    setExcelFile(null); setExcelPreviewRows([]); setExcelValidCount(0); setExcelInvalidCount(0); setExcelSentCount(0);
-    if (excelInputRef.current) excelInputRef.current.value = "";
-  };
+  // const clearExcel = () => {
+  //   setExcelFile(null); setExcelPreviewRows([]); setExcelValidCount(0); setExcelInvalidCount(0); setExcelSentCount(0);
+  //   if (excelInputRef.current) excelInputRef.current.value = "";
+  // };
 
+
+  const clearExcel = () => {
+  setExcelFile(null);
+  setExcelPreviewRows([]);
+  setExcelValidCount(0);
+  setExcelInvalidCount(0);
+  setExcelSentCount(0);
+
+  if (excelInputRef.current) {
+    excelInputRef.current.value = null;
+  }
+};
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || "").toString().trim());
   // const isValidEmail = (email) => email?.toString().trim().replace(/,+$/, "").toLowerCase();
 
