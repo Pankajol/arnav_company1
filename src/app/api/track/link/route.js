@@ -9,14 +9,18 @@ export async function GET(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    // url param may be encoded, e.g. url=https%3A%2F%2Fexample.com
-    const target = url.searchParams.get("url");
+    let target = url.searchParams.get("url");
 
     if (!id || !target) {
       return new Response(JSON.stringify({ error: "Missing params" }), { status: 400 });
     }
 
-    // log click (timestamp + increment)
+    // 🔧 Fix: ensure protocol exists
+    if (!target.startsWith("http://") && !target.startsWith("https://")) {
+      target = "https://" + target;
+    }
+
+    // log click
     try {
       await EmailLog.findByIdAndUpdate(
         id,
@@ -28,11 +32,11 @@ export async function GET(req) {
       );
     } catch (err) {
       console.error("link track update error:", err);
-      // continue to redirect even on DB error
     }
 
-    // redirect to target
+    // redirect
     return Response.redirect(target, 302);
+
   } catch (err) {
     console.error("track/link handler error:", err);
     return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
