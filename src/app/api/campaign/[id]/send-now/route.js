@@ -335,7 +335,15 @@ export async function POST(req, context) {
 
         const openPixel = BASE_URL ? `<img src="${BASE_URL.replace(/\/$/, "")}/api/track/email-open?id=${log._id}" width="1" height="1" style="display:none;" />` : "";
         const attachmentLink = (campaign.attachments && campaign.attachments.length) ? `<a href="${BASE_URL}/api/track/attachment?id=${log._id}">📎 Download Attachment</a>` : "";
-        const trackedLink = campaign.ctaText ? `<a href="${BASE_URL}/api/track/link?id=${log._id}&url=${encodeURIComponent(campaign.ctaLink || "")}">${campaign.ctaText}</a>` : "";
+        let url = campaign.ctaLink || "";
+
+if (url && !url.startsWith("http")) {
+  url = "https://" + url;
+}
+
+const trackedLink = campaign.ctaText
+  ? `<a href="${BASE_URL}/api/track/link?id=${log._id}&url=${encodeURIComponent(url)}">${campaign.ctaText}</a>`
+  : "";
 
         const finalHtml = `
           <div>
