@@ -254,11 +254,21 @@ export default function CampaignPage() {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
         const firstRowKeys = Object.keys(rows[0] || {});
-        let emailKey = firstRowKeys[0];
-        const preview = rows.map((r, idx) => {
-          const rawEmail = isValidEmail(r[emailKey] ?? r.email ?? "");
-          return { id: idx + 1, email: rawEmail || "", raw: r, valid: isValidEmail(rawEmail), isSent: false };
-        });
+        const emailKey =
+  firstRowKeys.find(k =>
+    k.toLowerCase().includes("email")
+  ) || firstRowKeys[0];
+       const preview = rows.map((r, idx) => {
+  const rawEmail = (r[emailKey] ?? r.email ?? "").toString().trim();
+
+  return {
+    id: idx + 1,
+    email: rawEmail,
+    raw: r,
+    valid: isValidEmail(rawEmail),
+    isSent: false
+  };
+});
         setExcelPreviewRows(preview);
         setExcelValidCount(preview.filter(p => p.valid).length);
         setExcelInvalidCount(preview.filter(p => !p.valid).length);
@@ -614,6 +624,64 @@ const payload = {
                       <button type="button" onClick={clearExcel} className="p-2 hover:bg-white/10 rounded-lg"><X size={18} /></button>
                     </div>
                   )}
+                  {excelPreviewRows.length > 0 && (
+  <div className="mt-4 border rounded-xl overflow-hidden">
+
+    {/* Header */}
+    <div className="bg-gray-100 px-4 py-2 text-sm font-bold flex justify-between">
+      <span>Email Preview ({excelPreviewRows.length})</span>
+
+      <div className="flex gap-3 text-xs">
+        <span className="text-green-600 font-bold">
+          Valid: {excelValidCount}
+        </span>
+        <span className="text-red-600 font-bold">
+          Invalid: {excelInvalidCount}
+        </span>
+      </div>
+    </div>
+
+    {/* Scroll after 5 rows */}
+    <div className="max-h-[220px] overflow-y-auto">
+
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 sticky top-0">
+          <tr>
+            <th className="text-left px-3 py-2">#</th>
+            <th className="text-left px-3 py-2">Email</th>
+            <th className="text-left px-3 py-2">Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {excelPreviewRows.map((row) => (
+            <tr key={row.id} className="border-t">
+              <td className="px-3 py-2">{row.id}</td>
+
+              <td className="px-3 py-2 break-all">
+                {row.email}
+              </td>
+
+              <td className="px-3 py-2">
+                {row.valid ? (
+                  <span className="text-green-600 font-semibold">
+                    ✅ Valid
+                  </span>
+                ) : (
+                  <span className="text-red-600 font-semibold">
+                    ❌ Invalid
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+)}
+
                 </div>
               )}
 

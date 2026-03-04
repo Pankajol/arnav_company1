@@ -130,7 +130,7 @@ export default function EmailList({ onEdit }) {
       <div className="flex gap-2 mb-4">
         <input placeholder="Search email / purpose / owner" value={q} onChange={(e) => setQ(e.target.value)} className="border p-2 rounded flex-1" />
         <button onClick={fetchItems} className="px-4 py-2 bg-gray-800 text-white rounded">Search</button>
-        <button onClick={() => router.push("/email-masters/add")} className="px-4 py-2 bg-indigo-600 text-white rounded">Add New</button>
+
       </div>
 
       {loading ? <div className="p-6 text-center">Loading...</div> : null}
