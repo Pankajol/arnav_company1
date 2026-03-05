@@ -15,7 +15,8 @@ import {
   FiSettings, 
   FiChevronDown, 
   FiChevronUp,
-  FiActivity
+  FiActivity,
+  FiMail
   
 } from "react-icons/fi"; // Switched to Feather Icons for better reliability
 import {
