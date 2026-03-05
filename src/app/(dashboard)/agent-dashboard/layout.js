@@ -139,6 +139,7 @@ export default function RootDashboardLayout({ children }) {
               isOpen={openSections.crm}
               onToggle={() => toggleSection('crm')}
             >
+              <Item href="/agent-dashboard/email-templates" label="Email Templates" icon={<FiMail/>} />
               <Item href="/agent-dashboard/leads-view" label="My Leads" icon={<HiUserGroup/>} />
               <Item href="/agent-dashboard/opportunities" label="Deal Pipeline" icon={<HiChartSquareBar/>} />
               
