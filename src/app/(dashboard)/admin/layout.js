@@ -21,7 +21,11 @@ export default function RootDashboardLayout({ children }) {
   const [session, setSession] = useState(null);
   const router = useRouter();
   const pathname = usePathname(); // To identify which dashboard we are in
+  const [openMenu, setOpenMenu] = useState(null);
 
+const toggleMenu = (menu) => {
+  setOpenMenu(openMenu === menu ? null : menu);
+};
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return router.push("/");
@@ -55,6 +59,23 @@ export default function RootDashboardLayout({ children }) {
 );
 
 /* ---------- UI COMPONENTS ---------- */
+// const Section = ({ title, icon, isOpen, onToggle, children }) => (
+//   <div className="border-b border-gray-600/20">
+//     <button
+//       onClick={onToggle}
+//       className="flex justify-between w-full px-3 py-3 hover:bg-gray-600 transition-colors text-left"
+//     >
+//       <span className="flex gap-3 items-center font-medium text-sm">
+//         <span className="text-lg text-blue-400">{icon}</span> {title}
+//       </span>
+//       <span className="text-xs">{isOpen ? "−" : "+"}</span>
+//     </button>
+//     {isOpen && <div className="bg-gray-800/40 pb-2 ml-4 border-l border-gray-500">{children}</div>}
+//   </div>
+// );
+
+
+
 const Section = ({ title, icon, isOpen, onToggle, children }) => (
   <div className="border-b border-gray-600/20">
     <button
@@ -66,10 +87,14 @@ const Section = ({ title, icon, isOpen, onToggle, children }) => (
       </span>
       <span className="text-xs">{isOpen ? "−" : "+"}</span>
     </button>
-    {isOpen && <div className="bg-gray-800/40 pb-2 ml-4 border-l border-gray-500">{children}</div>}
+
+    {isOpen && (
+      <div className="bg-gray-800/40 pb-2 ml-4 border-l border-gray-500">
+        {children}
+      </div>
+    )}
   </div>
 );
-
   return (
     <div className="flex h-screen bg-[#F8FAFC]">
       {/* SIDEBAR */}
@@ -89,7 +114,12 @@ const Section = ({ title, icon, isOpen, onToggle, children }) => (
 
           {/* --- ADMIN ONLY SECTION --- */}
           {isAdmin && (
-            <Section title="System Controls" icon={<HiMenu/>} isOpen={true}>
+            <Section
+  title="System Controls"
+  icon={<HiMenu/>}
+  isOpen={openMenu === "system"}
+  onToggle={() => toggleMenu("system")}
+>
               <Item href="/admin/email-masters" label="Email Masters " icon={<HiUsers/>} />
               <Item href="/admin/email-templates" label="Email Templates" icon={<HiDocumentText/>} />
               <Item href="/admin/users" label="User Permissions" icon={<HiUserGroup/>} />
@@ -99,7 +129,12 @@ const Section = ({ title, icon, isOpen, onToggle, children }) => (
 
           {/* --- SHARED CRM SECTION --- */}
           {(isAdmin || isAgent) && (
-            <Section title="CRM Pipeline" icon={<SiCivicrm className="text-amber-500"/>} isOpen={true}>
+            <Section
+  title="CRM Pipeline"
+  icon={<SiCivicrm className="text-amber-500"/>}
+  isOpen={openMenu === "crm"}
+  onToggle={() => toggleMenu("crm")}
+>
               <Item href="/admin/leads-view" label="My Leads" icon={<HiUserGroup/>} />
               <Item href="/admin/opportunities" label="Deal Pipeline" icon={<HiChartSquareBar/>} />
               
@@ -109,6 +144,24 @@ const Section = ({ title, icon, isOpen, onToggle, children }) => (
               )}
             </Section>
           )}
+
+          {/* --- HELPDESK SECTION --- */}
+{isAdmin && (
+  <Section
+  title="Helpdesk"
+  icon={<HiUser />}
+  isOpen={openMenu === "helpdesk"}
+  onToggle={() => toggleMenu("helpdesk")}
+>
+    <Item href="/admin/helpdesk/tickets" icon={<HiDocumentText />} label="Tickets" />
+    <Item href="/admin/helpdesk/agents" icon={<HiUserGroup />} label="Agents List" />
+    <Item href="/admin/helpdesk/categories" icon={<HiOutlineLibrary />} label="Categories" />
+    <Item href="/admin/helpdesk/feedback" icon={<HiDocumentText />} label="Feedback" />
+    <Item href="/admin/helpdesk/feedback/analytics" icon={<HiChartSquareBar />} label="Feedback Analysis" />
+  </Section>
+)}
+       
+       
 
           {/* --- AGENT ONLY TOOLS --- */}
           {isAgent && !isAdmin && (
@@ -415,13 +468,13 @@ const Section = ({ title, icon, isOpen, onToggle, children }) => (
 
 //           {/* HELPDESK */}
 //           {canAccess(["Admin", "Agent"]) && (
-//             <Section title="Helpdesk" icon={<HiUser />} isOpen={openMenu === "helpdesk"} onToggle={() => toggleMenu("helpdesk")}>
-//               <Item href="/admin/helpdesk/tickets" icon={<HiDocumentText />} label="Tickets" onClick={closeSidebar} />
-//               <Item href="/admin/helpdesk/agents" label="Agents List" onClick={closeSidebar} />
-//               <Item href="/admin/helpdesk/categories" label="Categories" onClick={closeSidebar} />
-//               <Item href="/admin/helpdesk/feedback" icon={<HiDocumentText />} label="Feedback" onClick={closeSidebar} />
-//               <Item href="/admin/helpdesk/feedback/analytics" label="Feedback Analysis" onClick={closeSidebar} />
-//             </Section>
+            // <Section title="Helpdesk" icon={<HiUser />} isOpen={openMenu === "helpdesk"} onToggle={() => toggleMenu("helpdesk")}>
+            //   <Item href="/admin/helpdesk/tickets" icon={<HiDocumentText />} label="Tickets" onClick={closeSidebar} />
+            //   <Item href="/admin/helpdesk/agents" label="Agents List" onClick={closeSidebar} />
+            //   <Item href="/admin/helpdesk/categories" label="Categories" onClick={closeSidebar} />
+            //   <Item href="/admin/helpdesk/feedback" icon={<HiDocumentText />} label="Feedback" onClick={closeSidebar} />
+            //   <Item href="/admin/helpdesk/feedback/analytics" label="Feedback Analysis" onClick={closeSidebar} />
+            // </Section>
 //           )}
 
 //           <div className="p-4 mt-6 border-t border-gray-700"><LogoutButton /></div>
